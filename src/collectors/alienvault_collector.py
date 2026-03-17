@@ -37,10 +37,16 @@ class AlienVaultCollector(BaseCollector):
 
             for pulse in data.get("results", []):
                 for ind in pulse.get("indicators", []):
-                    if ind.get("indicator"):
+                    value = ind.get("indicator")
+                    ind_type = str(ind.get("type", "")).lower()
+
+                    # 🎯 Filter only useful IOC types
+                    if value and any(x in ind_type for x in ["ip", "domain", "url", "hash"]):
                         indicators.append({
-                            "indicator": ind.get("indicator"),
-                            "type": ind.get("type")
+                            "indicator": value,
+                            "type": ind_type,
+                            "source": "AlienVault",
+                            "tags": pulse.get("tags", [])
                         })
 
         else:

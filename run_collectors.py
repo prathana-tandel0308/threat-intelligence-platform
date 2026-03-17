@@ -1,47 +1,74 @@
 import time
 from dotenv import load_dotenv
+
+# Load env variables
 load_dotenv()
 
+# 🔹 Existing collectors
 from src.collectors.alienvault_collector import AlienVaultCollector
 from src.collectors.virustotal_collector import VirusTotalCollector
 from src.collectors.abuseipdb_collector import AbuseIPDBCollector
 
+# 🔥 New collectors
+from src.collectors.phishtank_collector import PhishTankCollector
+from src.collectors.threatfox_collector import ThreatFoxCollector
+from src.collectors.feodo_collector import FeodoCollector
+
+# 🔹 Processing
 from src.processors.normalizer import normalize
 from src.processors.deduplicator import remove_duplicates
 
 
 def main():
-    # Initialize collectors
+    # ✅ Initialize collectors
     alien = AlienVaultCollector()
     vt = VirusTotalCollector()
     abuse = AbuseIPDBCollector()
+    phishtank = PhishTankCollector()
+    threatfox = ThreatFoxCollector()
+    feodo = FeodoCollector()
 
     data = []
 
-    # Collect from AlienVault
+    # 🔹 AlienVault
     av_data = alien.fetch()
     data += av_data
     print("AlienVault:", len(av_data))
 
-    # Collect from VirusTotal
+    # 🔹 VirusTotal
     vt_data = vt.fetch()
     data += vt_data
     print("After VT:", len(data))
 
-    # Collect from AbuseIPDB
+    # 🔹 AbuseIPDB
     abuse_data = abuse.fetch()
     data += abuse_data
     print("After Abuse:", len(data))
 
+    # 🔥 PhishTank (URLs)
+    pt_data = phishtank.fetch()
+    data += pt_data
+    print("After PhishTank:", len(data))
+
+    # 🔥 ThreatFox (ALL types)
+    tf_data = threatfox.fetch()
+    data += tf_data
+    print("After ThreatFox:", len(data))
+
+    # 🔴 Feodo (C2 servers)
+    fd_data = feodo.fetch()
+    data += fd_data
+    print("After Feodo:", len(data))
+
     print(f"\nCollected {len(data)} indicators")
 
-    # Normalize + Deduplicate
+    # 🔥 PROCESSING
     data = normalize(data)
     data = remove_duplicates(data)
 
     print(f"After cleaning: {len(data)} indicators")
 
-    # Save to MongoDB
+    # 💾 Save to MongoDB
     if data:
         alien.save_indicators(data)
         print("✅ Data stored in MongoDB")
@@ -55,4 +82,4 @@ if __name__ == "__main__":
         print("\n🚀 Starting collection cycle...\n")
         main()
         print("\n⏳ Waiting 5 minutes...\n")
-        time.sleep(300)  # 300 sec = 5 minutes
+        time.sleep(300)  # 5 minutes

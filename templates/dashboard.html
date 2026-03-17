@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Threat Intelligence Dashboard</title>
+    <style>
+        body {
+            background: #0b0f15;
+            color: white;
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        .card {
+            background: #111;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🚨 Threat Intelligence Dashboard</h1>
+
+<div class="card">Total: {{ total }}</div>
+<div class="card">AlienVault: {{ alienvault }}</div>
+<div class="card">AbuseIPDB: {{ abuse }}</div>
+<div class="card">VirusTotal: {{ vt }}</div>
+
+<h2>Recent Threats</h2>
+
+<table>
+    <tr>
+        <th>Indicator</th>
+        <th>Type</th>
+        <th>Source</th>
+    </tr>
+
+    {% for item in recent %}
+    <tr>
+        <td>{{ item.indicator }}</td>
+        <td>{{ item.type }}</td>
+        <td>{{ item.source }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
