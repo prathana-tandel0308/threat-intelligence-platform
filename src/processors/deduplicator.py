@@ -3,17 +3,21 @@ def remove_duplicates(data):
     unique = []
 
     for d in data:
-        val = d.get("indicator")
+        indicator = d.get("indicator")
+        ioc_type = d.get("type")
 
-        # ❌ skip empty / invalid values
-        if not val:
+        # ❌ skip empty
+        if not indicator:
             continue
+
+        # ✅ create unique key
+        key = (indicator, ioc_type)
 
         # ❌ skip duplicates
-        if val in seen:
+        if key in seen:
             continue
 
-        seen.add(val)
+        seen.add(key)
         unique.append(d)
 
     return unique
