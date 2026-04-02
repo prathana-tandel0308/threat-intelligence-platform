@@ -61,22 +61,15 @@ This system solves the problem by:
 
 ---
 
-## 🏗️ System Architecture
-OSINT Sources
-↓
-Threat Intelligence Collector (Python)
-↓
-Data Normalization & Processing
-↓
-MongoDB (Central Database)
-↓
-Elasticsearch (SIEM)
-↓
-Kibana Dashboard
-↓
-Dynamic Policy Enforcer (Firewall)
-↓
-iptables (Blocking Layer)
+## 🏗️ System Flow
+1. OSINT Sources  
+2. Threat Intelligence Collector (Python)  
+3. Data Normalization & Processing  
+4. MongoDB (Central Database)  
+5. Elasticsearch (SIEM)  
+6. Kibana Dashboard  
+7. Dynamic Policy Enforcer (Firewall)  
+8. iptables (Blocking Layer) 
 
 ---
 
@@ -108,15 +101,17 @@ iptables (Blocking Layer)
 
 ### 3. Database Layer (MongoDB)
 
-```json
-{
-  "indicator_type": "IP",
-  "value": "185.234.217.54",
-  "source": "AlienVault",
-  "risk_score": 92,
-  "status": "active"
-}
-## 4. SIEM Integration (ELK Stack)
+### Example Threat Record (MongoDB)
+
+- Indicator Type: IP  
+- Value: 185.234.217.54  
+- Source: AlienVault  
+- Risk Score: 92  
+- Status: active  
+
+---
+
+### 4. SIEM Integration (ELK Stack)
 
 - **Elasticsearch** → Data indexing  
 - **Logstash** → Data processing  
@@ -124,58 +119,10 @@ iptables (Blocking Layer)
 
 ---
 
-## 5. Dynamic Security Policy Enforcer
+### 5. Dynamic Security Policy Enforcer
 
 - Monitors MongoDB  
 - Detects high-risk threats  
 - Generates firewall rules  
 - Blocks malicious IPs automatically  
-
----
-
-## 6. Firewall Enforcement
-
-Example rule:
-iptables -A INPUT -s 185.234.217.54 -j DROP
-
----
-
-## 7. Logging System
-
-Logs include:
-
-- Threat ingestion  
-- Firewall actions  
-- Blocked IPs  
-- Timestamps  
-
----
-
-## 📊 Key Performance Indicators (KPIs)
-
-| KPI | Description |
-|-----|------------|
-| OSINT Integration | Connect to ≥ 3 threat sources |
-| Processing Speed | < 10 seconds per data cycle |
-| Duplicate Removal | No repeated indicators |
-| Auto Blocking | High-risk IPs blocked automatically |
-| Alert Generation | Real-time dashboard updates |
-
----
-
-## 👥 User Personas
-
-### SOC Analyst
-- Monitors threats  
-- Uses Kibana dashboard  
-
-### Security Engineer
-- Manages firewall rules  
-- Verifies automated blocking  
-
-### Compliance Officer
-- Reviews logs  
-- Ensures regulatory compliance  
-
----
 
