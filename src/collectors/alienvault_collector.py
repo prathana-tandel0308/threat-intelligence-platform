@@ -3,29 +3,24 @@ import os
 from dotenv import load_dotenv
 from src.collectors.base_collector import BaseCollector
 
-# Load environment variables
 load_dotenv()
 
-
 class AlienVaultCollector(BaseCollector):
-
     def __init__(self):
         super().__init__("AlienVault")
 
     def fetch(self):
+        # Reverted to 'subscribed' to fix 404 errors
         url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
 
-        # 🔍 Debug: check API key
         api_key = os.getenv("ALIENVAULT_API_KEY")
-        print("KEY:", api_key)
 
-        # Headers with API key
         headers = {
             "X-OTX-API-KEY": api_key.strip() if api_key else ""
         }
 
         try:
-            res = requests.get(url, headers=headers)
+            res = requests.get(url, headers=headers, timeout=30)
         except Exception as e:
             print("Request Error:", e)
             return []
@@ -40,16 +35,13 @@ class AlienVaultCollector(BaseCollector):
                     value = ind.get("indicator")
                     ind_type = str(ind.get("type", "")).lower()
 
-                    # 🎯 Filter only useful IOC types
                     if value and any(x in ind_type for x in ["ip", "domain", "url", "hash"]):
                         indicators.append({
                             "indicator": value,
                             "type": ind_type,
-                            "source": "AlienVault",
                             "tags": pulse.get("tags", [])
                         })
-
         else:
-            print("❌ AlienVault API Error:", res.status_code)
+            print(f"AlienVault Error: {res.status_code} - {res.text}")
 
         return indicators
