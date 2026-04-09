@@ -18,7 +18,7 @@ class AbuseIPDBCollector(BaseCollector):
         }
 
         params = {
-            "confidenceMinimum": 90
+            "confidenceMinimum": 50
         }
 
         try:
@@ -32,8 +32,10 @@ class AbuseIPDBCollector(BaseCollector):
         if res.status_code == 200:
             for item in res.json().get("data", []):
                 indicators.append({
-                    "indicator": item["ipAddress"],
+                    "indicator": item.get("ipAddress"),
                     "type": "ip"
                 })
+        else:
+            print("AbuseIPDB Error:", res.status_code)
 
         return indicators
