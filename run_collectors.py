@@ -1,85 +1,85 @@
 import time
 from dotenv import load_dotenv
-
-# Load env variables
 load_dotenv()
 
-# 🔹 Existing collectors
+# Import all collectors
 from src.collectors.alienvault_collector import AlienVaultCollector
 from src.collectors.virustotal_collector import VirusTotalCollector
 from src.collectors.abuseipdb_collector import AbuseIPDBCollector
-
-# 🔥 New collectors
+from src.collectors.feodo_collector import FeodoCollector
 from src.collectors.phishtank_collector import PhishTankCollector
 from src.collectors.threatfox_collector import ThreatFoxCollector
-from src.collectors.feodo_collector import FeodoCollector
+from src.collectors.urlhaus_collector import URLHausCollector
 
-# 🔹 Processing
 from src.processors.normalizer import normalize
 from src.processors.deduplicator import remove_duplicates
 
 
-def main():
-    # ✅ Initialize collectors
-    alien = AlienVaultCollector()
-    vt = VirusTotalCollector()
-    abuse = AbuseIPDBCollector()
-    phishtank = PhishTankCollector()
-    threatfox = ThreatFoxCollector()
-    feodo = FeodoCollector()
+def run_pipeline():
+    print("\n🚀 Starting collection cycle...\n")
+
+    collectors = [
+        AlienVaultCollector(),
+        VirusTotalCollector(),
+        AbuseIPDBCollector(),
+        FeodoCollector(),
+        PhishTankCollector(),
+        ThreatFoxCollector(),
+        URLHausCollector()
+    ]
 
     data = []
 
-    # 🔹 AlienVault
-    av_data = alien.fetch()
-    data += av_data
-    print("AlienVault:", len(av_data))
+    for c in collectors:
+        try:
+            result = c.fetch()
+            if result:
+                print(f"✅ {c.source}: {len(result)} indicators")
+                data += result
+            else:
+                print(f"⚠️ {c.source}: No data returned (Check API errors above)")
+        except Exception as e:
+            print(f"❌ Error collecting from {c.source}: {e}")
 
-    # 🔹 VirusTotal
-    vt_data = vt.fetch()
-    data += vt_data
-    print("After VT:", len(data))
+    print(f"\nTotal Collected: {len(data)}")
 
-    # 🔹 AbuseIPDB
-    abuse_data = abuse.fetch()
-    data += abuse_data
-    print("After Abuse:", len(data))
+    if not data:
+        print("⚠️ No data collected in this cycle.")
+        return
 
-    # 🔥 PhishTank (URLs)
-    pt_data = phishtank.fetch()
-    data += pt_data
-    print("After PhishTank:", len(data))
-
-    # 🔥 ThreatFox (ALL types)
-    tf_data = threatfox.fetch()
-    data += tf_data
-    print("After ThreatFox:", len(data))
-
-    # 🔴 Feodo (C2 servers)
-    fd_data = feodo.fetch()
-    data += fd_data
-    print("After Feodo:", len(data))
-
-    print(f"\nCollected {len(data)} indicators")
-
-    # 🔥 PROCESSING
+    # Process data
     data = normalize(data)
     data = remove_duplicates(data)
 
-    print(f"After cleaning: {len(data)} indicators")
+    print(f"After cleaning: {len(data)}")
 
-    # 💾 Save to MongoDB
-    if data:
-        alien.save_indicators(data)
-        print("✅ Data stored in MongoDB")
+    # Save to DB
+    # FIX: We must use "is not None" for MongoDB collection objects
+    db_collection = collectors[0].collection
+    
+    if db_collection is not None:
+        try:
+            collectors[0].save_indicators(data)
+            print("✅ Stored in MongoDB")
+        except Exception as e:
+            print(f"❌ Database Error: {e}")
     else:
-        print("⚠️ No data to store")
+        print("❌ Database connection is None. Cannot save.")
 
-
-# 🔁 AUTO RUN EVERY 5 MINUTES
-if __name__ == "__main__":
+def main():
     while True:
-        print("\n🚀 Starting collection cycle...\n")
-        main()
-        print("\n⏳ Waiting 5 minutes...\n")
-        time.sleep(300)  # 5 minutes
+        try:
+            run_pipeline()
+            print("\n⏳ Waiting 5 minutes before next cycle...")
+            time.sleep(1800)  
+        except KeyboardInterrupt:
+            print("\n\n🛑 Stopping collector...")
+            break
+        except Exception as e:
+            # Catch any unexpected crashes so the loop continues
+            print(f"\n💥 Unexpected Critical Error: {e}")
+            print("Restarting in 60 seconds...")
+            time.sleep(1800) 
+
+if __name__ == "__main__":
+    main()
