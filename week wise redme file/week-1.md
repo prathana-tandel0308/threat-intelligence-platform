@@ -22,7 +22,10 @@ The project was configured on a Windows system.
 ### Python Libraries:
 ```bash
 pip install requests pymongo python-dotenv
-📁 2. Project Structure
+```
+
+## 📁 2. Project Structure
+```text
 threat-intelligence-platform/
 │
 ├── src/
@@ -57,77 +60,64 @@ threat-intelligence-platform/
 ├── requirements.txt
 ├── README.md
 └── .gitignore
-🗄 3. MongoDB Integration
+```
+
+## 🗄 3. MongoDB Integration
 MongoDB is used to store threat indicators.
 
-Database Details:
-Database: threat_db
+### Database Details:
+- **Database**: `threat_db` *(Note: Unified to `threat_intel` in later phases)*
+- **Collection**: `threats` *(Note: Unified to `indicators` in later phases)*
 
-Collection: threats
+### Features:
+- Stores IPs, domains, hashes
+- Fast querying
+- Deduplication using `update_one()`
 
-Features:
-Stores IPs, domains, hashes
+## 🌐 4. OSINT API Integration
+**Integrated Sources:**
+- AlienVault OTX
+- VirusTotal
+- AbuseIPDB
 
-Fast querying
+**Data Collected:**
+- Malicious IP addresses
+- Domains
+- URLs
+- File hashes
 
-Deduplication using update_one()
-
-🌐 4. OSINT API Integration
-Integrated Sources:
-AlienVault OTX
-
-VirusTotal
-
-AbuseIPDB
-
-Data Collected:
-Malicious IP addresses
-
-Domains
-
-URLs
-
-File hashes
-
-⚙️ 5. Collector Implementation
+## ⚙️ 5. Collector Implementation
 Each OSINT source has its own collector module.
 
-Flow:
-Connect to API
+### Flow:
+1. Connect to API
+2. Fetch data
+3. Extract indicators
+4. Format data
+5. Store in database
 
-Fetch data
-
-Extract indicators
-
-Format data
-
-Store in database
-
-💾 6. Data Storage Logic
+## 💾 6. Data Storage Logic
+```python
 collection.update_one(
     {"indicator": ind["indicator"], "type": ind["type"]},
     {"$set": ind},
     upsert=True
 )
-Benefits:
-Prevents duplicate entries
+```
+### Benefits:
+- Prevents duplicate entries
+- Updates existing records
 
-Updates existing records
+## ▶️ 7. Execution Script
+The main script `run_collectors.py`:
+- Runs all collectors
+- Collects data from APIs
+- Processes data
+- Stores data in MongoDB
+- Runs continuously
 
-▶️ 7. Execution Script
-The main script run_collectors.py:
-
-Runs all collectors
-
-Collects data from APIs
-
-Processes data
-
-Stores data in MongoDB
-
-Runs continuously
-
-📊 8. Output Example
+## 📊 8. Output Example
+```text
 🚀 Starting collection cycle...
 AlienVault: 132
 VirusTotal: 1
@@ -135,47 +125,70 @@ AbuseIPDB: 0
 Collected: 133
 After cleaning: 133
 ✅ Stored in MongoDB
-⚠️ 9. Challenges Faced
-Issue	Solution
-API Errors (401/403)	Fixed API keys in .env
-Duplicate Data	Used MongoDB update_one()
-Infinite Loop	Controlled execution
-Database Errors	Corrected DB configuration
-📚 10. Learning Outcomes
-Understanding OSINT threat intelligence
+```
 
-API integration using Python
+## ⚠️ 9. Challenges Faced
+| Issue | Solution |
+|-------|----------|
+| API Errors (401/403) | Fixed API keys in `.env` |
+| Duplicate Data | Used MongoDB `update_one()` |
+| Infinite Loop | Controlled execution |
+| Database Errors | Corrected DB configuration |
 
-MongoDB database handling
+## 📚 10. Learning Outcomes
+- Understanding OSINT threat intelligence
+- API integration using Python
+- MongoDB database handling
+- Data collection automation
+- Basic cybersecurity concepts
 
-Data collection automation
-
-Basic cybersecurity concepts
-
-✅ 11. Conclusion
+## ✅ 11. Conclusion
 Week 1 successfully implemented a working threat intelligence collection system. The platform automatically collects and stores threat indicators from multiple OSINT sources, forming the foundation for further development.
 
-⚙️ RUNNING STEPS (WINDOWS)
-🟢 1. Open Project Folder
+---
+
+## ⚙️ RUNNING STEPS (WINDOWS)
+
+### 🟢 1. Open Project Folder
+```bash
 cd C:\threat-intelligence-platform
-🟢 2. Install Requirements
+```
+
+### 🟢 2. Install Requirements
+```bash
 pip install -r requirements.txt
-🟢 3. Setup .env
+```
+
+### 🟢 3. Setup .env
+```env
 MONGO_URI=mongodb://localhost:27017/
-DB_NAME=threat_db
+DB_NAME=threat_intel
 
 ALIENVAULT_API_KEY=your_key
 VIRUSTOTAL_API_KEY=your_key
 ABUSEIPDB_API_KEY=your_key
-🟢 4. Start MongoDB
+```
+
+### 🟢 4. Start MongoDB
+```bash
 mongod
-🟢 5. Run Project
+```
+
+### 🟢 5. Run Project
+```bash
 python run_collectors.py
-🟢 6. Expected Output
+```
+
+### 🟢 6. Expected Output
+```text
 🚀 Starting collection cycle...
 ...
 ✅ Stored in MongoDB
-🟢 7. Verify in MongoDB
+```
+
+### 🟢 7. Verify in MongoDB
+```bash
 mongosh
-use threat_db
-db.threats.find().pretty()
+use threat_intel
+db.indicators.find().pretty() 
+```
