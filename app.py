@@ -1,26 +1,26 @@
 from flask import Flask, render_template_string, request, jsonify, session, redirect
 from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
-from dotenv import load_dotenv
 import geoip2.database
-import os
 
-load_dotenv()
-
+# ---------------- APP ----------------
 app = Flask(__name__)
 app.secret_key = "secret"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # ---------------- DB ----------------
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client[os.getenv("DB_NAME")]
+client = MongoClient("mongodb://localhost:27017/")
+db = client["threat_db"]
 
-collection = db["threat_indicators"]
+collection = db["threats"]        # ✅ FIXED (was wrong before)
 users = db["users"]
 blocklist = db["blocklist"]
 
 # ---------------- GEOIP ----------------
-reader = geoip2.database.Reader('GeoLite2-City.mmdb')
+try:
+    reader = geoip2.database.Reader('GeoLite2-City.mmdb')
+except:
+    reader = None
 
 # ---------------- AUTO BLOCK ----------------
 def auto_block():
@@ -89,6 +89,9 @@ def chart():
 # ---------------- API GEO ----------------
 @app.route('/api/geo')
 def geo():
+    if not reader:
+        return jsonify([])
+
     ips = collection.find({"type": "ip"}).limit(50)
     result = []
 
@@ -123,7 +126,7 @@ LOGIN_HTML = """
 """
 
 DASHBOARD_HTML = """
-<h1>Threat Dashboard</h1>
+<h1>🔥 Threat Intelligence Dashboard</h1>
 
 <p>Total: {{total}}</p>
 <p>IP: {{ip}}</p>
@@ -147,7 +150,11 @@ fetch('/api/chart').then(r=>r.json()).then(d=>{
   type:'bar',
   data:{
     labels:d.map(x=>x._id),
-    datasets:[{data:d.map(x=>x.count)}]
+    datasets:[{
+      label: "Threat Types",
+      data:d.map(x=>x.count),
+      backgroundColor:"red"
+    }]
   }
  });
 });

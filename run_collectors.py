@@ -1,85 +1,89 @@
 import time
+import random
+from datetime import datetime
 from dotenv import load_dotenv
 
-# Load env variables
 load_dotenv()
 
-# 🔹 Existing collectors
 from src.collectors.alienvault_collector import AlienVaultCollector
 from src.collectors.virustotal_collector import VirusTotalCollector
 from src.collectors.abuseipdb_collector import AbuseIPDBCollector
-
-# 🔥 New collectors
+from src.collectors.feodo_collector import FeodoCollector
 from src.collectors.phishtank_collector import PhishTankCollector
 from src.collectors.threatfox_collector import ThreatFoxCollector
-from src.collectors.feodo_collector import FeodoCollector
+from src.collectors.urlhaus_collector import URLHausCollector
 
-# 🔹 Processing
 from src.processors.normalizer import normalize
 from src.processors.deduplicator import remove_duplicates
 
 
-def main():
-    # ✅ Initialize collectors
-    alien = AlienVaultCollector()
-    vt = VirusTotalCollector()
-    abuse = AbuseIPDBCollector()
-    phishtank = PhishTankCollector()
-    threatfox = ThreatFoxCollector()
-    feodo = FeodoCollector()
+def run_pipeline():
+    print("\n🚀 Starting collection cycle...\n")
+
+    collectors = [
+        AlienVaultCollector(),
+        VirusTotalCollector(),
+        FeodoCollector(),
+        PhishTankCollector(),
+        ThreatFoxCollector(),
+        URLHausCollector()
+    ]
+
+    # 🔥 Reduce AbuseIPDB usage
+    if random.randint(1, 3) == 1:
+        collectors.append(AbuseIPDBCollector())
 
     data = []
 
-    # 🔹 AlienVault
-    av_data = alien.fetch()
-    data += av_data
-    print("AlienVault:", len(av_data))
+    for c in collectors:
+        try:
+            result = c.fetch()
+            time.sleep(2)  # 🔥 avoid rate limit
 
-    # 🔹 VirusTotal
-    vt_data = vt.fetch()
-    data += vt_data
-    print("After VT:", len(data))
+            if result:
+                print(f"✅ {c.source}: {len(result)} indicators")
+                data += result
+            else:
+                print(f"⚠️ {c.source}: No data returned")
 
-    # 🔹 AbuseIPDB
-    abuse_data = abuse.fetch()
-    data += abuse_data
-    print("After Abuse:", len(data))
+        except Exception as e:
+            print(f"❌ Error from {c.source}: {e}")
 
-    # 🔥 PhishTank (URLs)
-    pt_data = phishtank.fetch()
-    data += pt_data
-    print("After PhishTank:", len(data))
+    print(f"\nTotal Collected: {len(data)}")
 
-    # 🔥 ThreatFox (ALL types)
-    tf_data = threatfox.fetch()
-    data += tf_data
-    print("After ThreatFox:", len(data))
+    if not data:
+        return
 
-    # 🔴 Feodo (C2 servers)
-    fd_data = feodo.fetch()
-    data += fd_data
-    print("After Feodo:", len(data))
-
-    print(f"\nCollected {len(data)} indicators")
-
-    # 🔥 PROCESSING
     data = normalize(data)
     data = remove_duplicates(data)
 
-    print(f"After cleaning: {len(data)} indicators")
+    print(f"After cleaning: {len(data)}")
 
-    # 💾 Save to MongoDB
-    if data:
-        alien.save_indicators(data)
-        print("✅ Data stored in MongoDB")
-    else:
-        print("⚠️ No data to store")
+    for item in data:
+        item["date_added"] = datetime.utcnow()
+
+    db_collection = collectors[0].collection
+
+    if db_collection is not None:
+        collectors[0].save_indicators(data)
+        print("✅ Stored in MongoDB")
 
 
-# 🔁 AUTO RUN EVERY 5 MINUTES
-if __name__ == "__main__":
+def main():
     while True:
-        print("\n🚀 Starting collection cycle...\n")
-        main()
-        print("\n⏳ Waiting 5 minutes...\n")
-        time.sleep(300)  # 5 minutes
+        try:
+            run_pipeline()
+            print("\n⏳ Waiting 15 minutes...\n")
+            time.sleep(900)
+
+        except KeyboardInterrupt:
+            print("\n🛑 Stopped")
+            break
+
+        except Exception as e:
+            print("Error:", e)
+            time.sleep(60)
+
+
+if __name__ == "__main__":
+    main()
