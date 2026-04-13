@@ -1,8 +1,10 @@
 import time
+import random
+from datetime import datetime
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# Import all collectors
 from src.collectors.alienvault_collector import AlienVaultCollector
 from src.collectors.virustotal_collector import VirusTotalCollector
 from src.collectors.abuseipdb_collector import AbuseIPDBCollector
@@ -21,65 +23,67 @@ def run_pipeline():
     collectors = [
         AlienVaultCollector(),
         VirusTotalCollector(),
-        AbuseIPDBCollector(),
         FeodoCollector(),
         PhishTankCollector(),
         ThreatFoxCollector(),
         URLHausCollector()
     ]
 
+    # 🔥 Reduce AbuseIPDB usage
+    if random.randint(1, 3) == 1:
+        collectors.append(AbuseIPDBCollector())
+
     data = []
 
     for c in collectors:
         try:
             result = c.fetch()
+            time.sleep(2)  # 🔥 avoid rate limit
+
             if result:
                 print(f"✅ {c.source}: {len(result)} indicators")
                 data += result
             else:
-                print(f"⚠️ {c.source}: No data returned (Check API errors above)")
+                print(f"⚠️ {c.source}: No data returned")
+
         except Exception as e:
-            print(f"❌ Error collecting from {c.source}: {e}")
+            print(f"❌ Error from {c.source}: {e}")
 
     print(f"\nTotal Collected: {len(data)}")
 
     if not data:
-        print("⚠️ No data collected in this cycle.")
         return
 
-    # Process data
     data = normalize(data)
     data = remove_duplicates(data)
 
     print(f"After cleaning: {len(data)}")
 
-    # Save to DB
-    # FIX: We must use "is not None" for MongoDB collection objects
+    for item in data:
+        item["date_added"] = datetime.utcnow()
+
     db_collection = collectors[0].collection
-    
+
     if db_collection is not None:
-        try:
-            collectors[0].save_indicators(data)
-            print("✅ Stored in MongoDB")
-        except Exception as e:
-            print(f"❌ Database Error: {e}")
-    else:
-        print("❌ Database connection is None. Cannot save.")
+        collectors[0].save_indicators(data)
+        print("✅ Stored in MongoDB")
+
 
 def main():
     while True:
         try:
             run_pipeline()
-            print("\n⏳ Waiting 5 minutes before next cycle...")
-            time.sleep(1800)  
+            print("\n⏳ Waiting 15 minutes...\n")
+            time.sleep(900)
+
         except KeyboardInterrupt:
-            print("\n\n🛑 Stopping collector...")
+            print("\n🛑 Stopped")
             break
+
         except Exception as e:
-            # Catch any unexpected crashes so the loop continues
-            print(f"\n💥 Unexpected Critical Error: {e}")
-            print("Restarting in 60 seconds...")
-            time.sleep(1800) 
+            print("Error:", e)
+            time.sleep(60)
+
 
 if __name__ == "__main__":
     main()
