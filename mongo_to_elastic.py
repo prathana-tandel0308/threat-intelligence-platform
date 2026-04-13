@@ -121,3 +121,4 @@ count = es.count(index=INDEX_NAME)["count"]
 print(f"🔍 Verified {count} documents in Elasticsearch")
 
 print("✅ Data push complete!")
+
