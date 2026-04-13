@@ -1,10 +1,9 @@
 from elasticsearch import Elasticsearch, helpers
 from pymongo import MongoClient
 import sys
+import time
+import datetime
 
-# ================================
-# 🔹 Configuration
-# ================================
 MONGO_URI = "mongodb://localhost:27017/"
 DB_NAME = "threat_db"
 COLLECTION_NAME = "threats"
@@ -14,12 +13,10 @@ ES_USER = "elastic"
 ES_PASS = "6VnIzFqX*QltlQtCk0F9"
 INDEX_NAME = "threat-intel"
 
-# ================================
-# 🔹 Connect to MongoDB
-# ================================
+# ------------------ MongoDB ------------------
 try:
     mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    mongo_client.server_info()  # Force connection check
+    mongo_client.server_info()
     db = mongo_client[DB_NAME]
     collection = db[COLLECTION_NAME]
     print("✅ Connected to MongoDB")
@@ -27,9 +24,7 @@ except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
     sys.exit(1)
 
-# ================================
-# 🔹 Connect to Elasticsearch
-# ================================
+# ------------------ Elasticsearch ------------------
 try:
     es = Elasticsearch(
         ES_HOST,
@@ -45,76 +40,84 @@ except Exception as e:
     print(f"❌ Elasticsearch connection failed: {e}")
     sys.exit(1)
 
-# ================================
-# 🔹 Check Document Count
-# ================================
 doc_count = collection.count_documents({})
-if doc_count == 0:
-    print("⚠️ No documents found in MongoDB collection")
-    sys.exit(0)
 print(f"📊 Found {doc_count} documents in MongoDB")
 
-# ================================
-# 🔹 Create/Reset Index
-# ================================
-if es.indices.exists(index=INDEX_NAME):
-    es.indices.delete(index=INDEX_NAME)
-    print(f"🗑️ Deleted existing index: {INDEX_NAME}")
+# ❌ REMOVE DELETE
+# if es.indices.exists(index=INDEX_NAME):
+#     es.indices.delete(index=INDEX_NAME)
 
-mapping = {
-    "mappings": {
-        "properties": {
-            "indicator": {"type": "keyword"},
-            "type": {"type": "keyword"},
-            "source": {"type": "keyword"},
-            "severity": {"type": "keyword"},
-            "risk_score": {"type": "integer"}
+# ✅ CREATE INDEX ONLY IF NOT EXISTS
+if not es.indices.exists(index=INDEX_NAME):
+    mapping = {
+        "mappings": {
+            "properties": {
+                "indicator": {"type": "keyword"},
+                "type": {"type": "keyword"},
+                "source": {"type": "keyword"},
+                "severity": {"type": "keyword"},
+                "risk_score": {"type": "integer"},
+                "blocked": {"type": "boolean"},
+                "timestamp": {"type": "date"}
+            }
         }
     }
-}
+    es.indices.create(index=INDEX_NAME, **mapping)
+    print(f"🆕 Created index: {INDEX_NAME}")
+else:
+    print(f"✅ Using existing index: {INDEX_NAME}")
 
-es.indices.create(index=INDEX_NAME, **mapping)  # Fixed: no body=
-print(f"🆕 Created index: {INDEX_NAME}")
+# ------------------ SERIALIZER ------------------
+def serialize(doc):
+    for key, value in doc.items():
+        if isinstance(value, datetime.datetime):
+            doc[key] = value.isoformat()
+    return doc
 
-# ================================
-# 🔹 Prepare Documents
-# ================================
+# ------------------ GENERATOR ------------------
 def generate_docs():
     for doc in collection.find():
         try:
+            doc = serialize(doc)
+
             clean_doc = {
                 "indicator": str(doc.get("indicator", "")),
                 "type": str(doc.get("type", "")),
                 "source": str(doc.get("source", "")),
                 "severity": str(doc.get("severity", "low")),
-                "risk_score": int(doc.get("risk_score", 0))
+                "risk_score": int(doc.get("risk_score", 0)),
+                "blocked": bool(doc.get("blocked", False)),
+                "timestamp": doc.get("timestamp")
             }
+
+            # 🔥 UNIQUE ID (prevents duplicates)
+            doc_id = f"{clean_doc['indicator']}_{clean_doc['type']}"
+
             yield {
+                "_op_type": "update",   # 🔥 IMPORTANT
                 "_index": INDEX_NAME,
-                "_id": str(doc["_id"]),
-                "_source": clean_doc
+                "_id": doc_id,
+                "doc": clean_doc,
+                "doc_as_upsert": True  # 🔥 INSERT if not exists
             }
+
         except Exception as e:
             print(f"⚠️ Skipping document: {e}")
 
-# ================================
-# 🔹 Bulk Indexing
-# ================================
+# ------------------ BULK INSERT ------------------
 try:
     success, errors = helpers.bulk(es, generate_docs(), raise_on_error=False)
     print(f"✅ Success: {success}")
     print(f"❌ Failed: {len(errors)}")
-    
-    if errors:
-        for err in errors[:5]:  # Show first 5 errors
-            print(f"   Error: {err}")
 except Exception as e:
     print(f"❌ Bulk indexing error: {e}")
     sys.exit(1)
 
-# ================================
-# 🔹 Verify Index
-# ================================
+# ------------------ REFRESH ------------------
+es.indices.refresh(index=INDEX_NAME)
+time.sleep(1)
+
 count = es.count(index=INDEX_NAME)["count"]
 print(f"🔍 Verified {count} documents in Elasticsearch")
+
 print("✅ Data push complete!")
