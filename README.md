@@ -1,154 +1,164 @@
+# 🚀 Advanced Threat Intelligence Platform (TIP)
 
-# Dynamic Firewall Enforcement Engine
+## 📌 Overview
+The Threat Intelligence Platform (TIP) is a complete cybersecurity solution that collects, processes, analyzes, visualizes, and actively blocks malicious threats in real-time.
 
-## Overview
-This module is part of an Advanced Threat Intelligence Platform for the Finance & Banking sector.
+This project integrates:
+* **Data Collection (OSINT)**
+* **Data Storage (MongoDB)**
+* **Search & Analytics (Elasticsearch)**
+* **Visualization (Kibana)**
+* **Automated Firewall Enforcement**
 
-The system monitors MongoDB for high-risk threat indicators and dynamically enforces firewall rules using iptables.
+## 🎯 Objectives
+* Collect threat intelligence from multiple OSINT sources
+* Store and normalize data in MongoDB
+* Index and search data using Elasticsearch
+* Visualize threat patterns using Kibana dashboards
+* Automatically block high-risk threats using firewall rules
+* Implement rollback and monitoring for safety
 
-## Features
-- Real-time MongoDB monitoring
-- Risk-based IP blocking
-- Secure IP validation
-- Persistent blocked IP storage
-- Logging and audit trail
-- Daemon-style continuous execution
+## 🛠️ Technologies Used
+| Technology | Purpose |
+| :--- | :--- |
+| **Python** | Core scripting & automation |
+| **MongoDB** | Threat data storage |
+| **Elasticsearch** | Fast indexing & search |
+| **Kibana** | Visualization dashboards |
+| **IPTables** | Firewall blocking |
+| **OSINT APIs** | Threat intelligence collection |
 
-## Technologies Used
-- Python
-- MongoDB
-- Linux iptables
-- systemd
+## 📂 Project Structure
+```text
+threat-intelligence-platform/
+│
+├── src/
+│   ├── collectors/
+│   ├── database/
+│   ├── processors/
+│   └── services/
+│
+├── assets/              # Dashboard & output screenshots
+├── Project Directory Structure/              # Project folder Directory
+├── Week aise redme file/                # Week-wise documentation
+│   ├── week-1.md
+│   ├── week-2.md
+│   ├── week-3.md
+│   └── week-4.md
+│
+├── firewall_engine.py   # Dynamic firewall system
+├── firewall.py          # Blocking logic
+├── mongo_to_elastic.py  # Data pipeline
+├── monitor.py           # Monitoring system
+├── rollback.py          # Safety rollback
+├── run_collectors.py    # Data collection runner
+├── config.py
+├── utils.py
+│
+├── README.md
+├── requirements.txt
+└── .gitignore
+```
 
-## How to Run
-sudo python3 firewall_engine.py
-=======
-# 📌 Advanced Threat Intelligence Platform (TIP) & Dynamic Security Policy Enforcer
+## 🔄 System Architecture
+```text
+OSINT Sources
+     ↓
+Collectors (Python)
+     ↓
+MongoDB (Storage)
+     ↓
+Processors (Normalization + Deduplication)
+     ↓
+Elasticsearch (Indexing)
+     ↓
+Kibana Dashboard (Visualization)
+     ↓
+Firewall Engine (Auto Blocking)
+```
+
+## 🔥 Firewall Capabilities
+| Threat Type | Action |
+| :--- | :--- |
+| **IP** | Block using IPTables |
+| **Domain** | Block via `/etc/hosts` |
+| **URL** | Block via Squid |
+| **Hash** | Logged + YARA rules |
+| **Email** | Postfix blacklist |
+| **CIDR** | Network blocking |
+| **JA3** | TLS fingerprint blocking |
+| **Certificate** | SSL block |
+
+## 📊 Kibana Dashboard Features
+* 📊 **Total Threats**
+* 🚨 **High Risk Threats**
+* 🔥 **Blocked vs Active**
+* 🌐 **Threat Types**
+* ⚠️ **Severity Distribution**
+* 📈 **Risk Score Histogram**
+* 📡 **Top Sources**
+* 🛡️ **Blocked Threat Types**
+* ⏳ **Timeline Graph**
+* 📋 **Live Blocked Threat Logs**
+* 🔐 **System Status Panel**
+
+## 🧪 How to Run the Project
+
+**1️⃣ Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**2️⃣ Start Services**
+```bash
+sudo systemctl start mongodb
+sudo systemctl start elasticsearch
+sudo systemctl start kibana
+```
+
+**3️⃣ Run Data Collection**
+```bash
+python3 run_collectors.py
+```
+
+**4️⃣ Push Data to Elasticsearch**
+```bash
+python3 mongo_to_elastic.py
+```
+
+**5️⃣ Start Firewall Engine**
+```bash
+python3 firewall_engine.py
+```
+
+**6️⃣ Open Dashboard**
+Navigate to `http://localhost:5601` in your web browser.
+
+## 🔐 Safety Features
+* Rollback system for false positives
+* Logging of all blocked threats
+* Controlled risk threshold (≥ 80)
+* Duplicate prevention
+* Real-time monitoring
+
+## ⚠️ Challenges Faced & ✅ Solutions
+* **Elasticsearch TLS issues** ➔ Cleaned and normalized data
+* **Data normalization problems** ➔ Used bulk indexing API
+* **Duplicate threat entries** ➔ Implemented modular architecture
+* **Firewall rule management** ➔ Added type-based routing system
+* **Multi-type threat handling** ➔ Integrated logging & rollback
+
+## 🎯 Final Outcome
+* ✔ Fully functional Threat Intelligence Platform
+* ✔ Real-time threat detection and blocking
+* ✔ Interactive dashboards for analysis
+* ✔ Automated cybersecurity defense system
+
+## 📸 Screenshots
+👉 See `assets/` folder for Dashboard views, Firewall logs, and Data pipeline results.
 
 ---
+👨‍💻 **Authors:** Prathana Lovish Sunny Reniz
 
-## 📖 Project Overview
-
-### Project Title
-Advanced Threat Intelligence Platform (TIP) with Dynamic Security Policy Enforcer  
-
-### Domain
-Finance & Banking Cybersecurity  
-
----
-
-## 🎯 Objective
-
-The objective of this project is to design and implement an automated cybersecurity defense system that can:
-
-- Collect real-time threat intelligence from OSINT sources  
-- Process and analyze threat data  
-- Store and manage threat indicators centrally  
-- Visualize threats using a SIEM dashboard  
-- Automatically enforce firewall rules to block malicious activity  
-
-The system minimizes manual intervention and enables proactive threat mitigation.
-
----
-
-## ❗ Problem Statement
-
-Financial institutions face continuous cyber threats such as:
-
-- Advanced Persistent Threats (APT)  
-- Zero-day attacks  
-- Botnet traffic  
-- Phishing infrastructures  
-
-Traditional firewalls are static and cannot react quickly.
-
-### Solution
-
-This system solves the problem by:
-
-- Collecting OSINT threat intelligence  
-- Processing and analyzing indicators  
-- Automatically blocking malicious IPs using firewall rules  
-
----
-
-## 🚀 Key Features
-
-- Automated OSINT threat data collection  
-- Data cleaning, normalization, and deduplication  
-- Risk scoring and severity classification  
-- MongoDB-based centralized storage  
-- ELK Stack integration (SIEM)  
-- Real-time Kibana dashboard  
-- Automated firewall enforcement using iptables  
-- Logging and audit tracking  
-- Reduced human intervention  
-
----
-
-## 🏗️ System Flow
-1. OSINT Sources  
-2. Threat Intelligence Collector (Python)  
-3. Data Normalization & Processing  
-4. MongoDB (Central Database)  
-5. Elasticsearch (SIEM)  
-6. Kibana Dashboard  
-7. Dynamic Policy Enforcer (Firewall)  
-8. iptables (Blocking Layer) 
-
----
-
-## 📦 Core Components
-
-### 1. Threat Intelligence Collector
-- Collects data from OSINT sources  
-- Uses Python APIs  
-
-**Sources:**
-- AlienVault OTX  
-- VirusTotal  
-- AbuseIPDB  
-- MalwareBazaar  
-- PhishTank  
-- ThreatFox  
-- URLhaus  
-- Feodo Tracker  
-
----
-
-### 2. Data Normalization Engine
-- Cleans raw data  
-- Removes duplicates  
-- Assigns risk scores  
-- Classifies severity  
-
----
-
-### 3. Database Layer (MongoDB)
-
-### Example Threat Record (MongoDB)
-
-- Indicator Type: IP  
-- Value: 185.234.217.54  
-- Source: AlienVault  
-- Risk Score: 92  
-- Status: active  
-
----
-
-### 4. SIEM Integration (ELK Stack)
-
-- **Elasticsearch** → Data indexing  
-- **Logstash** → Data processing  
-- **Kibana** → Visualization  
-
----
-
-### 5. Dynamic Security Policy Enforcer
-
-- Monitors MongoDB  
-- Detects high-risk threats  
-- Generates firewall rules  
-- Blocks malicious IPs automatically  
-
-
+### 🏁 Conclusion
+This project demonstrates a complete end-to-end cybersecurity pipeline, combining data engineering, threat intelligence, and active defense mechanisms into one scalable system.
