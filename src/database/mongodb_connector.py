@@ -6,11 +6,15 @@ load_dotenv()
 
 def get_collection():
     try:
-        client = MongoClient(os.getenv("MONGO_URI"))
-        client.admin.command('ping')  # ✅ checks connection
+        mongo_uri = os.getenv("MONGO_URI") or "mongodb://localhost:27017/"
+        db_name = os.getenv("DB_NAME") or "threat_db"
 
-        db = client[os.getenv("DB_NAME")]
-        return db["threat_indicators"]
+        client = MongoClient(mongo_uri)
+        client.admin.command('ping')
+
+        db = client[db_name]
+
+        return db["threats"]   # ✅ use ONE collection only
 
     except Exception as e:
         print("MongoDB Error:", e)
